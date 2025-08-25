@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Routine Genius</title>
+  <link href="styles.css" rel="stylesheet" />
+</head>
+<body>
+  <div class="allButFooter">
+    <div class="header-container">
+      <div class="heading">
+        <h1 class="titlehead">Routine Genius</h1>
+        <h3>Powered by AI</h3>
+        <h5>Intelligently build your class schedule with ease</h5>
+        <h6>Made by Rafin<3</h6>
+      </div>
+      <button id="theme-toggle" title="Toggle theme">🌙</button>
+    </div>
+
+    <div class="main-container">
+      <div class="controls-container">
+        <div class="control-group" id="course-selection-group">
+          <h3>1. Add Courses</h3>
+          <div class="course-input-container">
+            <div class="course-input-wrapper">
+              <input type="text" id="course-search" placeholder="Search by course code..." autocomplete="off" />
+              <button id="add-course-btn">Add</button>
+            </div>
+            <div id="search-suggestions" class="suggestions-list hidden"></div>
+          </div>
+          <ul id="selected-courses-list"></ul>
+          <div id="course-preferences" class="course-preferences"></div>
+        </div>
+        <div class="control-group" id="preferences-group">
+          <h3>2. Set Preferences</h3>
+          <div class="preference">
+            <label>Ignore Days</label>
+            <div id="ignore-days" class="days-checkboxes">
+              <span><input type="checkbox" id="Saturday" value="Saturday"><label for="Saturday">Sat</label></span>
+              <span><input type="checkbox" id="Sunday" value="Sunday"><label for="Sunday">Sun</label></span>
+              <span><input type="checkbox" id="Monday" value="Monday"><label for="Monday">Mon</label></span>
+              <span><input type="checkbox" id="Tuesday" value="Tuesday"><label for="Tuesday">Tue</label></span>
+              <span><input type="checkbox" id="Wednesday" value="Wednesday"><label for="Wednesday">Wed</label></span>
+              <span><input type="checkbox" id="Thursday" value="Thursday"><label for="Thursday">Thu</label></span>
+            </div>
+          </div>
+          <div class="preference">
+            <label>Ignore Time</label>
+            <div id="ignore-time-blocks" class="days-checkboxes">
+              <span><input type="checkbox" id="slot-08:00-09:20" value="08:00-09:20"><label for="slot-08:00-09:20">08:00–09:20</label></span>
+              <span><input type="checkbox" id="slot-09:30-10:50" value="09:30-10:50"><label for="slot-09:30-10:50">09:30–10:50</label></span>
+              <span><input type="checkbox" id="slot-11:00-12:20" value="11:00-12:20"><label for="slot-11:00-12:20">11:00–12:20</label></span>
+              <span><input type="checkbox" id="slot-12:30-13:50" value="12:30-13:50"><label for="slot-12:30-13:50">12:30–1:50</label></span>
+              <span><input type="checkbox" id="slot-14:00-15:20" value="14:00-15:20"><label for="slot-14:00-15:20">2:00–3:20</label></span>
+              <span><input type="checkbox" id="slot-15:30-16:50" value="15:30-16:50"><label for="slot-15:30-16:50">3:30–4:50</label></span>
+              <span><input type="checkbox" id="slot-17:00-18:20" value="17:00-18:20"><label for="slot-17:00-18:20">5:00–6:20</label></span>
+            </div>
+          </div>
+        </div>
+        <div class="control-group" id="constraints-group">
+          <h3>3.Adjust Your Routine</h3>
+          <div class="preference">
+            <label>Min &amp; Max Days per Week</label>
+            <div class="range-pair">
+              <div class="range-item">
+                <span class="range-label">Min days:</span>
+                <input type="range" id="min-days" min="2" max="5" step="1" value="2" />
+                <span class="range-value" id="min-days-val">2</span>
+              </div>
+              <div class="range-item">
+                <span class="range-label">Max days:</span>
+                <input type="range" id="max-days" min="2" max="5" step="1" value="5" />
+                <span class="range-value" id="max-days-val">5</span>
+              </div>
+            </div>
+          </div>
+          <div class="preference">
+            <label>Max Courses per Day</label>
+            <div class="range-single">
+              <input type="range" id="max-courses-per-day" min="1" max="1" step="1" value="1" />
+              <span class="range-value" id="max-courses-per-day-val">1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-group" id="generate-group">
+          <button id="generate-btn">Generate Routines</button>
+        </div>
+      </div>
+
+      <div id="output-container">
+        <div id="loading" class="hidden">Generating...</div>
+        <div id="combination-count" class="hidden combo-count"></div>
+
+        <div id="suggestions-container"></div>
+
+        <div id="final-routine-container" class="hidden">
+          <h2>Your Confirmed Routine</h2>
+          <div class="final-routine-wrapper">
+            <div class="routine-table card-scroll" id="final-routine-table-wrapper"></div>
+            <div class="status-table card-scroll" id="final-status-table-wrapper"></div>
+          </div>
+          <button id="downloadTable">Download Routine</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/html-to-image@1.11.11/dist/html-to-image.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>
