@@ -1,5 +1,20 @@
 document.addEventListener('DOMContentLoaded', () => {
   let allCourses = {};
+  let courseSugIndex = -1;
+function resetCourseActive() {
+  courseSugIndex = -1;
+  Array.from(searchSuggestions.querySelectorAll('.suggestion-item'))
+    .forEach(el => el.classList.remove('active'));
+}
+function setCourseActive(idx) {
+  const items = Array.from(searchSuggestions.querySelectorAll('.suggestion-item'));
+  if (!items.length) return;
+  idx = Math.max(0, Math.min(idx, items.length - 1));
+  items.forEach(el => el.classList.remove('active'));
+  items[idx].classList.add('active');
+  courseSugIndex = idx;
+  items[idx].scrollIntoView({ block: 'nearest' });
+}
   let selectedCourses = new Set();
   const coursePrefs = {}; 
 
@@ -246,11 +261,20 @@ function renderCoursePrefs() {
 };
     const facInp = document.getElementById(`inp-fac-${code}`);
     const secInp = document.getElementById(`inp-sec-${code}`);
-    facInp.addEventListener('input', () => paintListsOnly(code));
-    secInp.addEventListener('input', () => paintListsOnly(code));
+    facInp.addEventListener('input', () => { 
+      const pos = facInp.selectionStart;
+      facInp.value = facInp.value.toUpperCase();  
+      facInp.setSelectionRange(pos, pos);
+      paintListsOnly(code, 'fac');
+      showMiniSuggest('fac', code);
+    });
+    secInp.addEventListener('input', () => {
+      paintListsOnly(code, 'sec');
+      showMiniSuggest('sec', code);
+    });
     facInp.addEventListener('focus', () => {
-  paintListsOnly(code);
-  showMiniSuggest('fac', code);  
+      paintListsOnly(code);
+      showMiniSuggest('fac', code);  
 });
 secInp.addEventListener('focus', () => {
   paintListsOnly(code);
@@ -265,6 +289,23 @@ secInp.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
     document.getElementById(`btn-add-sec-${code}`).click();
   }
+});
+facInp.addEventListener('keydown', (e) => {
+  const box = document.getElementById(`sg-fac-${code}`);
+  if (!box || box.classList.contains('hidden')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(box, +1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(box, -1); }
+  else if (e.key === 'Enter') { e.preventDefault(); (getActiveIndex(box) >= 0) ? clickActive(box) : document.getElementById(`btn-add-fac-${code}`).click(); }
+  else if (e.key === 'Escape') { hideBothMiniSuggests(code); }
+});
+
+secInp.addEventListener('keydown', (e) => {
+  const box = document.getElementById(`sg-sec-${code}`);
+  if (!box || box.classList.contains('hidden')) return;
+  if (e.key === 'ArrowDown') { e.preventDefault(); moveActive(box, +1); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); moveActive(box, -1); }
+  else if (e.key === 'Enter') { e.preventDefault(); (getActiveIndex(box) >= 0) ? clickActive(box) : document.getElementById(`btn-add-sec-${code}`).click(); }
+  else if (e.key === 'Escape') { hideBothMiniSuggests(code); }
 });
     paintTokensAndLists(code);
   });
@@ -301,7 +342,7 @@ secInp.addEventListener('keypress', (e) => {
     paintListsOnly(code);
   }
 
-function paintListsOnly(code) {
+function paintListsOnly(code, kind) {
   let facs = computeAvailableFaculties(code);
   let secs = computeAvailableSections(code);
 
@@ -316,11 +357,40 @@ function paintListsOnly(code) {
     if (!isNaN(na) && !isNaN(nb)) return na - nb;
     return a.localeCompare(b);
   });
-
-  renderMiniSuggestions('fac', code, facs);
-  renderMiniSuggestions('sec', code, secs);
+  if (kind === 'fac') {
+    renderMiniSuggestions('fac', code, facs);
+  } else if (kind === 'sec') {
+    renderMiniSuggestions('sec', code, secs);
+  } else {
+    renderMiniSuggestions('fac', code, facs);
+    renderMiniSuggestions('sec', code, secs);
+  }
 }
-
+function setActiveIndex(box, idx) {
+  const items = Array.from(box.querySelectorAll('.mini-suggest-item'));
+  if (!items.length) return;
+  idx = Math.max(0, Math.min(idx, items.length - 1));
+  items.forEach(el => el.classList.remove('active'));
+  items[idx].classList.add('active');
+  box.dataset.activeIndex = String(idx);
+  items[idx].scrollIntoView({ block: 'nearest' });
+}
+function getActiveIndex(box) {
+  const n = parseInt(box.dataset.activeIndex ?? '-1', 10);
+  return isNaN(n) ? -1 : n;
+}
+function moveActive(box, dir) {
+  const items = Array.from(box.querySelectorAll('.mini-suggest-item'));
+  if (!items.length) return;
+  const cur = getActiveIndex(box);
+  const next = cur < 0 ? (dir > 0 ? 0 : items.length - 1) : cur + dir;
+  setActiveIndex(box, (next + items.length) % items.length);
+}
+function clickActive(box) {
+  const items = Array.from(box.querySelectorAll('.mini-suggest-item'));
+  const i = getActiveIndex(box);
+  if (i >= 0 && items[i]) items[i].click();
+}
 function renderMiniSuggestions(kind, code, items) {
   const boxId = kind === 'fac' ? `sg-fac-${code}` : `sg-sec-${code}`;
   const inpId = kind === 'fac' ? `inp-fac-${code}` : `inp-sec-${code}`;
@@ -351,6 +421,7 @@ function renderMiniSuggestions(kind, code, items) {
       input.value = '';
       hideBothMiniSuggests(code);
     };
+    setActiveIndex(box, 0);
   });
 }
 
@@ -406,6 +477,7 @@ function hideBothMiniSuggests(code) {
   } else {
     searchSuggestions.classList.add('hidden');
   }
+  resetCourseActive();
 }
   function generateRoutines() {
     if (selectedCourses.size === 0) {
@@ -582,7 +654,23 @@ function displaySuggestions(suggestions) {
       searchSuggestions.classList.add('hidden');
     }
   });
-  courseSearchInput.addEventListener('input', handleSearchInput);
+  courseSearchInput.addEventListener('input', () => {
+  const pos = courseSearchInput.selectionStart;
+  courseSearchInput.value = courseSearchInput.value.toUpperCase();
+  courseSearchInput.setSelectionRange(pos, pos);
+  handleSearchInput();
+  });
+  courseSearchInput.addEventListener('keydown', (e) => {
+  const items = Array.from(searchSuggestions.querySelectorAll('.suggestion-item'));
+  if (e.key === 'ArrowDown' && items.length) { e.preventDefault(); setCourseActive(courseSugIndex < 0 ? 0 : courseSugIndex + 1); }
+  else if (e.key === 'ArrowUp' && items.length) { e.preventDefault(); setCourseActive(courseSugIndex < 0 ? items.length - 1 : courseSugIndex - 1); }
+  else if (e.key === 'Enter' && courseSugIndex >= 0 && items[courseSugIndex]) {
+    e.preventDefault(); items[courseSugIndex].click(); resetCourseActive();
+  } else if (e.key === 'Escape') {
+    searchSuggestions.classList.add('hidden'); resetCourseActive();
+  }
+});
+
   document.addEventListener('click', (e) => { if (!e.target.closest('.course-input-container')) { searchSuggestions.classList.add('hidden'); } 
   if (!e.target.closest('.course-input-container')) {
     const el = document.getElementById('search-suggestions');
