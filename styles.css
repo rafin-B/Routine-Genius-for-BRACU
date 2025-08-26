@@ -264,6 +264,8 @@ body.light-mode .inline-add button:hover{
 body.light-mode th{background-color:var(--table-header-bg);color:var(--primary-text)}
 body.light-mode .selected-course-item{background-color:#e9ecef;color:var(--primary-text);border:1px solid #d1d5db}
 body.light-mode #theme-toggle{background:#fff;color:var(--primary-text);border-color:var(--border-color)}
+.mini-suggest-item.active { background: rgba(255,255,255,.12); }
+#search-suggestions .suggestion-item.active { background: rgba(255,255,255,.12); }
 
 /*mobile*/
 @media (max-width: 640px){
