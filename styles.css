@@ -266,7 +266,9 @@ body.light-mode .selected-course-item{background-color:#e9ecef;color:var(--prima
 body.light-mode #theme-toggle{background:#fff;color:var(--primary-text);border-color:var(--border-color)}
 .mini-suggest-item.active { background: rgba(255,255,255,.12); }
 #search-suggestions .suggestion-item.active { background: rgba(255,255,255,.12); }
-
+body.light-mode .mini-suggest-item.active { background: rgba(0,0,0,.08); }
+body.light-mode #search-suggestions .suggestion-item.active { background: rgba(0,0,0,.08); }
+body.light-mode .mini-suggest-item.active { outline: 2px solid rgba(0,0,0,.12); outline-offset: -2px; }
 /*mobile*/
 @media (max-width: 640px){
   .controls-container{padding:1rem}
