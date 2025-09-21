@@ -406,13 +406,13 @@ function renderMiniSuggestions(kind, code, items) {
     box.innerHTML = '';
     box.classList.add('hidden');
     box.classList.remove('active');
+    box.dataset.activeIndex = '-1';
     return;
   }
-
   box.innerHTML = filtered.map(v =>
     `<div class="mini-suggest-item" data-v="${String(v).replace(/"/g,'&quot;')}">${v}</div>`
   ).join('');
-  showMiniSuggest(kind, code);
+  const shouldShow = (document.activeElement === input) || (q.length > 0);
   box.querySelectorAll('.mini-suggest-item').forEach(el => {
     el.onclick = () => {
       const val = el.getAttribute('data-v');
@@ -420,9 +420,18 @@ function renderMiniSuggestions(kind, code, items) {
       else addSectionPref(code, val, { cascade: true });
       input.value = '';
       hideBothMiniSuggests(code);
+      input.focus();
     };
-    setActiveIndex(box, 0);
   });
+
+  if (shouldShow) {
+    showMiniSuggest(kind, code);
+    setActiveIndex(box, 0);
+  } else {
+    box.classList.add('hidden');
+    box.classList.remove('active');
+    box.dataset.activeIndex = '-1';
+  }
 }
 
 function showMiniSuggest(kind, code) {
