@@ -470,6 +470,7 @@ function hideBothMiniSuggests(code) {
         addCourse(code);
         courseSearchInput.value = '';
         searchSuggestions.classList.add('hidden');
+        courseSearchInput.focus();
       };
       searchSuggestions.appendChild(item);
     });
