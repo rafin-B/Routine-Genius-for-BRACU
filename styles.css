@@ -7,7 +7,7 @@
   --border-color: rgb(55 65 81);
   --primary-text: #E5E7EB;
   --secondary-text: #9CA3AF;
-  --accent-color: rgb(59 130 246);   /* <- blue */
+  --accent-color: rgb(59 130 246);   
   --accent-hover: rgb(37 99 235);
   --success-color: #10B981;
   --conflict-color: #EF4444;
@@ -216,7 +216,21 @@ input[type="range"]::-moz-range-thumb{height:18px;width:18px;border-radius:50%;b
   color:#fff;cursor:pointer;font-weight:700;transition:background-color .2s
 }
 .confirm-btn:hover{background-color:#059669}
-
+.back-btn {
+  margin: 1.5rem auto 0;
+  display: block;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--accent-color);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color .2s;
+}
+.back-btn:hover {
+  background-color: var(--accent-hover);
+}
 table{
   width:100%;text-align:center;border-collapse:separate;border-spacing:0;font-size:.85rem;
   background:transparent
