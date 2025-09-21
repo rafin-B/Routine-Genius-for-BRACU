@@ -1,6 +1,10 @@
 document.addEventListener('DOMContentLoaded', () => {
   let allCourses = {};
+  let confirmedRoutines = [];
+  let lastSuggestions = [];
+  let lastSuggestionsPage = 1;
   let courseSugIndex = -1;
+  let lastScrollY = 0;
 function resetCourseActive() {
   courseSugIndex = -1;
   Array.from(searchSuggestions.querySelectorAll('.suggestion-item'))
@@ -524,9 +528,10 @@ function hideBothMiniSuggests(code) {
     }, 10);
   }
 
-function displaySuggestions(suggestions) {
+function displaySuggestions(suggestions, page=1) {
   const PAGE_SIZE = 12;
-
+  lastSuggestions = suggestions;
+  lastSuggestionsPage = page;
   suggestionsContainer.innerHTML = '';
 
   comboCount.textContent = `Found ${suggestions.length} combination${suggestions.length === 1 ? '' : 's'}.`;
@@ -537,7 +542,7 @@ function displaySuggestions(suggestions) {
     return;
   }
 
-  let page = 1;
+  let currentPage = page
   const totalPages = Math.ceil(suggestions.length / PAGE_SIZE);
 
   const renderPageNums = (current, total) => {
@@ -572,7 +577,7 @@ function displaySuggestions(suggestions) {
   const renderPage = () => {
     suggestionsContainer.innerHTML = '';
 
-    const start = (page - 1) * PAGE_SIZE;
+    const start = (currentPage - 1) * PAGE_SIZE;
     const end = Math.min(start + PAGE_SIZE, suggestions.length);
     const slice = suggestions.slice(start, end);
 
@@ -620,34 +625,66 @@ function displaySuggestions(suggestions) {
       return b;
     };
 
-    pager.appendChild(makeBtn('Prev', page === 1, () => { page--; renderPage(); }));
-    const labels = renderPageNums(page, totalPages);
-    labels.forEach(lbl => {
-      if (lbl === '…') {
-        const span = document.createElement('span');
-        span.textContent = '…';
-        span.style.opacity = '0.7';
-        pager.appendChild(span);
-      } else {
-        const isActive = (lbl === page);
-        pager.appendChild(makeBtn(String(lbl), false, () => { page = lbl; renderPage(); }, isActive));
-      }
-    });
-    pager.appendChild(makeBtn('Next', page === totalPages, () => { page++; renderPage(); }));
+pager.appendChild(makeBtn('Prev', currentPage === 1, () => {
+  currentPage--;
+  lastSuggestionsPage = currentPage;
+  renderPage();
+}));
 
-    suggestionsContainer.appendChild(pager);
+const labels = renderPageNums(currentPage, totalPages);
+labels.forEach(lbl => {
+  if (lbl === '…') {
+    const span = document.createElement('span');
+    span.textContent = '…';
+    span.style.opacity = '0.7';
+    pager.appendChild(span);
+  } else {
+    const isActive = (lbl === currentPage); 
+    pager.appendChild(makeBtn(String(lbl), false, () => { 
+      currentPage = lbl; 
+      lastSuggestionsPage = currentPage;
+      renderPage();
+    }, isActive));
+  }
+});
+
+pager.appendChild(makeBtn('Next', currentPage === totalPages, () => {
+  currentPage++;
+  lastSuggestionsPage = currentPage;
+  renderPage();
+}));
+
+suggestionsContainer.appendChild(pager);
   };
 
   renderPage();
 }
 
   function confirmRoutine(routine) {
-    suggestionsContainer.innerHTML = '';
-    finalRoutineContainer.classList.remove('hidden');
-    document.getElementById('final-routine-table-wrapper').innerHTML = createRoutineTableHTML('final-routine');
-    populateTable('final-routine', routine);
-    document.getElementById('final-status-table-wrapper').innerHTML = createStatusTableHTML(routine);
-  }
+  confirmedRoutines.push(routine);
+  lastScrollY = window.scrollY;
+  suggestionsContainer.innerHTML = '';
+  finalRoutineContainer.classList.remove('hidden');
+
+  document.getElementById('final-routine-table-wrapper').innerHTML = createRoutineTableHTML('final-routine');
+  populateTable('final-routine', routine);
+  document.getElementById('final-status-table-wrapper').innerHTML = createStatusTableHTML(routine);
+  const oldBackBtn = document.getElementById('back-to-suggestions');
+  if (oldBackBtn) oldBackBtn.remove();
+
+  const backBtn = document.createElement('button');
+  backBtn.id = 'back-to-suggestions';
+  backBtn.textContent = "⬅ Back to Suggestions";
+  backBtn.className = "back-btn";
+  backBtn.onclick = () => {
+    displaySuggestions(lastSuggestions, lastSuggestionsPage);
+    finalRoutineContainer.classList.add('hidden');
+    window.scrollTo(0, lastScrollY);
+  };
+  finalRoutineContainer.appendChild(backBtn);
+
+  renderConfirmedList();
+}
 
   function syncRangeDisplays() {
     minDaysVal.textContent = minDaysRange.value;
@@ -948,6 +985,34 @@ function populateTable(tableId, routine) {
     });
   });
 }
+function renderConfirmedList() {
+  const container = document.getElementById('confirmed-routines-container');
+  const list = document.getElementById('confirmed-routines-list');
+  list.innerHTML = '';
+
+  if (confirmedRoutines.length === 0) {
+    container.classList.add('hidden');
+    return;
+  }
+
+  container.classList.remove('hidden');
+  confirmedRoutines.forEach((routine, idx) => {
+    const card = document.createElement('div');
+    card.className = 'suggestion-card';
+    card.innerHTML = `
+      <h3>Confirmed Routine ${idx + 1}</h3>
+      <div class="suggestion-routine-wrapper">
+        <div class="routine-table card-scroll" id="confirmed-rt-${idx}"></div>
+        <div class="status-table card-scroll" id="confirmed-st-${idx}"></div>
+      </div>
+    `;
+    list.appendChild(card);
+    document.getElementById(`confirmed-rt-${idx}`).innerHTML = createRoutineTableHTML(`conf-rt-${idx}`);
+    populateTable(`conf-rt-${idx}`, routine);
+    document.getElementById(`confirmed-st-${idx}`).innerHTML = createStatusTableHTML(routine);
+  });
+}
+
 
 function getAffectedTimeSlots(startTime, endTime) {
   const slots = ["08:00-09:20","09:30-10:50","11:00-12:20","12:30-13:50","14:00-15:20","15:30-16:50","17:00-18:20"];
