@@ -102,8 +102,18 @@ function setCourseActive(idx) {
       consumedSeat: sectionData.consumedSeat,
       rawSchedule: (sectionData.preRegSchedule || '').replace(/\n/g, ' '),
       examMid:  midDetail || null,
-      examFinal: finalDetail || null
-    };
+      examFinal: finalDetail || null,
+      examMidRaw: {
+    date: ss.midExamDate || null,
+    start: ss.midExamStartTime || null,
+    end: ss.midExamEndTime || null
+  },
+  examFinalRaw: {
+    date: ss.finalExamDate || null,
+    start: ss.finalExamStartTime || null,
+    end: ss.finalExamEndTime || null
+  }
+};
 
     if (!allCourses[section.courseCode]) allCourses[section.courseCode] = [];
     allCourses[section.courseCode].push(section);
@@ -598,9 +608,28 @@ function displaySuggestions(suggestions, page=1) {
       document.getElementById(`rt-wrapper-${globalIndex}`).innerHTML = createRoutineTableHTML(`sug-rt-${globalIndex}`);
       populateTable(`sug-rt-${globalIndex}`, suggestion);
       document.getElementById(`st-wrapper-${globalIndex}`).innerHTML = createStatusTableHTML(suggestion);
+
+const statusWrapper = document.getElementById(`st-wrapper-${globalIndex}`);
+statusWrapper.innerHTML = createStatusTableHTML(suggestion);
+statusWrapper.querySelectorAll('.exam-warning').forEach(el => el.remove());
+const clashes = findExamClashes(suggestion);
+if (clashes.length > 0) {
+  const warnDiv = document.createElement('div');
+  warnDiv.className = 'exam-warning';
+  warnDiv.style.color = 'var(--conflict-color)';
+  warnDiv.style.fontWeight = 'bold';
+  warnDiv.style.marginTop = '0.75rem';
+  warnDiv.style.textAlign = 'left';
+  clashes.forEach(c => {
+    const p = document.createElement('p');
+    p.textContent = c;
+    warnDiv.appendChild(p);
+  });
+  statusWrapper.appendChild(warnDiv);
+}
+
       document.getElementById(`confirm-btn-${globalIndex}`).onclick = () => confirmRoutine(suggestion);
     });
-
     const pager = document.createElement('div');
     pager.style.display = 'flex';
     pager.style.flexWrap = 'wrap';
@@ -668,7 +697,8 @@ suggestionsContainer.appendChild(pager);
 
   document.getElementById('final-routine-table-wrapper').innerHTML = createRoutineTableHTML('final-routine');
   populateTable('final-routine', routine);
-  document.getElementById('final-status-table-wrapper').innerHTML = createStatusTableHTML(routine);
+document.getElementById('final-status-table-wrapper').innerHTML = createStatusTableHTML(routine);
+
   const oldBackBtn = document.getElementById('back-to-suggestions');
   if (oldBackBtn) oldBackBtn.remove();
 
@@ -948,7 +978,6 @@ function createStatusTableHTML(routine) {
 
     const mid  = section.examMid   ? section.examMid   : 'N/A';
     const fin  = section.examFinal ? section.examFinal : 'N/A';
-
     tableHTML += `<tr>
       <td>${section.courseCode}-${section.sectionName}</td>
       <td>${escapeHtml(String(fac))}</td>
@@ -985,6 +1014,54 @@ function populateTable(tableId, routine) {
     });
   });
 }
+function findExamClashes(routine) {
+  const examsByDate = {};
+
+  routine.forEach(sec => {
+    ["examMidRaw", "examFinalRaw"].forEach(key => {
+      const ex = sec[key];
+      if (ex && ex.date) {
+        if (!examsByDate[ex.date]) examsByDate[ex.date] = {};
+        const start = timeToMinutes(ex.start);
+        const end   = timeToMinutes(ex.end);
+        const cur   = examsByDate[ex.date][sec.courseCode];
+        if (!cur) {
+          examsByDate[ex.date][sec.courseCode] = { start, end };
+        } else {
+          cur.start = Math.min(cur.start, start);
+          cur.end   = Math.max(cur.end, end);
+        }
+      }
+    });
+  });
+
+  const clashes = new Set(); 
+
+  Object.entries(examsByDate).forEach(([date, byCourse]) => {
+    const codes = Object.keys(byCourse);
+    if (codes.length > 1) {
+      let sameTime = false;
+      for (let i = 0; i < codes.length; i++) {
+        for (let j = i + 1; j < codes.length; j++) {
+          const a = byCourse[codes[i]];
+          const b = byCourse[codes[j]];
+          if (Math.max(a.start, b.start) < Math.min(a.end, b.end)) {
+            sameTime = true;
+            break;
+          }
+        }
+      }
+      const names = codes.join(", ").replace(/, ([^,]*)$/, " and $1");
+      clashes.add( 
+        `Warning: ${names} have exams on the same day${sameTime ? " and time" : ""}.`
+      );
+    }
+  });
+
+  return Array.from(clashes);
+}
+
+
 function renderConfirmedList() {
   const container = document.getElementById('confirmed-routines-container');
   const list = document.getElementById('confirmed-routines-list');
