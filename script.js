@@ -20,6 +20,7 @@ function setCourseActive(idx) {
   items[idx].scrollIntoView({ block: 'nearest' });
 }
   let selectedCourses = new Set();
+  let ignoreFaculties = new Set();
   const coursePrefs = {}; 
 
   const themeToggleBtn = document.getElementById('theme-toggle');
@@ -28,6 +29,10 @@ function setCourseActive(idx) {
   const selectedCoursesList = document.getElementById('selected-courses-list');
   const coursePrefsContainer = document.getElementById('course-preferences');
   const ignoreDaysContainer = document.getElementById('ignore-days');
+  const ignoreFacultyInput = document.getElementById('ignore-faculty-input');
+  const ignoreFacultyAddBtn = document.getElementById('ignore-faculty-add-btn');
+  const ignoreFacultySuggest = document.getElementById('ignore-faculty-suggest');
+  const ignoreFacultyTokens = document.getElementById('ignore-faculty-tokens');
   const ignoreTimeBlocksContainer = document.getElementById('ignore-time-blocks');
   const minDaysRange = document.getElementById('min-days');
   const maxDaysRange = document.getElementById('max-days');
@@ -286,14 +291,12 @@ function renderCoursePrefs() {
       paintListsOnly(code, 'sec');
       showMiniSuggest('sec', code);
     });
-    facInp.addEventListener('focus', () => {
-      paintListsOnly(code);
-      showMiniSuggest('fac', code);  
-});
-secInp.addEventListener('focus', () => {
-  paintListsOnly(code);
-  showMiniSuggest('sec', code);   
-});
+    const showFacSuggest = () => { paintListsOnly(code, 'fac'); showMiniSuggest('fac', code); };
+    const showSecSuggest = () => { paintListsOnly(code, 'sec'); showMiniSuggest('sec', code); };
+    facInp.addEventListener('focus', showFacSuggest);
+    facInp.addEventListener('blur', () => { setTimeout(() => hideBothMiniSuggests(code), 150); });
+    secInp.addEventListener('focus', showSecSuggest);
+    secInp.addEventListener('blur', () => { setTimeout(() => hideBothMiniSuggests(code), 150); });
 facInp.addEventListener('keypress', (e) => {
   if (e.key === 'Enter') {
     document.getElementById(`btn-add-fac-${code}`).click();
@@ -426,26 +429,18 @@ function renderMiniSuggestions(kind, code, items) {
   box.innerHTML = filtered.map(v =>
     `<div class="mini-suggest-item" data-v="${String(v).replace(/"/g,'&quot;')}">${v}</div>`
   ).join('');
-  const shouldShow = (document.activeElement === input) || (q.length > 0);
+  box.dataset.activeIndex = '-1';
   box.querySelectorAll('.mini-suggest-item').forEach(el => {
-    el.onclick = () => {
+    el.addEventListener('mousedown', (e) => {
+      e.preventDefault(); // prevent input blur before selection
       const val = el.getAttribute('data-v');
       if (kind === 'fac') addFacultyPref(code, val, { cascade: true });
       else addSectionPref(code, val, { cascade: true });
       input.value = '';
       hideBothMiniSuggests(code);
-      input.focus();
-    };
+    });
   });
-
-  if (shouldShow) {
-    showMiniSuggest(kind, code);
-    setActiveIndex(box, 0);
-  } else {
-    box.classList.add('hidden');
-    box.classList.remove('active');
-    box.dataset.activeIndex = '-1';
-  }
+  // Visibility is controlled by focus/blur — don't touch hidden class here
 }
 
 function showMiniSuggest(kind, code) {
@@ -463,6 +458,79 @@ function hideBothMiniSuggests(code) {
   if (facBox) { facBox.classList.add('hidden'); facBox.classList.remove('active'); }
   if (secBox) { secBox.classList.add('hidden'); secBox.classList.remove('active'); }
 }
+  function getAllFaculties() {
+    const all = new Set();
+    Object.values(allCourses).forEach(sections => {
+      sections.forEach(s => {
+        const facs = s.faculty && s.faculty.length ? s.faculty : ['TBA'];
+        facs.forEach(f => all.add(String(f)));
+      });
+    });
+    return Array.from(all).sort();
+  }
+
+  function renderIgnoreFacultyTokens() {
+    ignoreFacultyTokens.innerHTML = '';
+    ignoreFaculties.forEach(fac => {
+      const t = document.createElement('span');
+      t.className = 'token';
+      t.innerHTML = `${escapeHtml(fac)} <button title="Remove">&times;</button>`;
+      t.querySelector('button').onclick = () => {
+        ignoreFaculties.delete(fac);
+        renderIgnoreFacultyTokens();
+      };
+      ignoreFacultyTokens.appendChild(t);
+    });
+  }
+
+  function renderIgnoreFacultySuggestions() {
+    const q = (ignoreFacultyInput.value || '').toUpperCase().trim();
+    const all = getAllFaculties().filter(f => !ignoreFaculties.has(f));
+    const filtered = q ? all.filter(f => f.toUpperCase().includes(q)) : all;
+    if (!filtered.length) {
+      ignoreFacultySuggest.innerHTML = '';
+      ignoreFacultySuggest.classList.add('hidden');
+      return;
+    }
+    ignoreFacultySuggest.innerHTML = filtered.slice(0, 80).map(f =>
+      `<div class="mini-suggest-item" data-v="${escapeHtml(f)}">${escapeHtml(f)}</div>`
+    ).join('');
+    ignoreFacultySuggest.classList.remove('hidden');
+    ignoreFacultySuggest.querySelectorAll('.mini-suggest-item').forEach(el => {
+      // mousedown fires before blur, so we can select without losing focus
+      el.addEventListener('mousedown', (e) => {
+        e.preventDefault(); // prevent input from losing focus
+        ignoreFaculties.add(el.getAttribute('data-v'));
+        ignoreFacultyInput.value = '';
+        ignoreFacultySuggest.classList.add('hidden');
+        renderIgnoreFacultyTokens();
+      });
+    });
+  }
+
+  function addIgnoreFaculty(val) {
+    const v = (val || '').trim();
+    if (!v) return;
+    ignoreFaculties.add(v);
+    ignoreFacultyInput.value = '';
+    ignoreFacultySuggest.classList.add('hidden');
+    renderIgnoreFacultyTokens();
+  }
+
+  ignoreFacultyAddBtn.addEventListener('click', () => addIgnoreFaculty(ignoreFacultyInput.value));
+  ignoreFacultyInput.addEventListener('keypress', e => { if (e.key === 'Enter') addIgnoreFaculty(ignoreFacultyInput.value); });
+  ignoreFacultyInput.addEventListener('input', () => {
+    const pos = ignoreFacultyInput.selectionStart;
+    ignoreFacultyInput.value = ignoreFacultyInput.value.toUpperCase();
+    ignoreFacultyInput.setSelectionRange(pos, pos);
+    renderIgnoreFacultySuggestions();
+  });
+  ignoreFacultyInput.addEventListener('focus', renderIgnoreFacultySuggestions);
+  ignoreFacultyInput.addEventListener('blur', () => {
+    // Delay hiding so mousedown on items fires first
+    setTimeout(() => { ignoreFacultySuggest.classList.add('hidden'); }, 150);
+  });
+
   function adjustMaxCoursesPerDay() {
     const n = Math.max(1, selectedCourses.size);
     maxCoursesPerDayRange.max = String(n);
@@ -517,6 +585,7 @@ function hideBothMiniSuggests(code) {
       const preferences = {
         ignoreDays: Array.from(ignoreDaysContainer.querySelectorAll('input:checked')).map(cb => cb.value),
         ignoreTimeBlocks: Array.from(ignoreTimeBlocksContainer.querySelectorAll('input:checked')).map(cb => cb.value),
+        ignoreFaculties: new Set(ignoreFaculties),
         minDays: Number(minDaysRange.value),
         maxDays: Number(maxDaysRange.value),
         maxCoursesPerDay: Number(maxCoursesPerDayRange.value),
@@ -748,18 +817,11 @@ document.getElementById('final-status-table-wrapper').innerHTML = createStatusTa
   }
 });
 
-  document.addEventListener('click', (e) => { if (!e.target.closest('.course-input-container')) { searchSuggestions.classList.add('hidden'); } 
-  if (!e.target.closest('.course-input-container')) {
-    const el = document.getElementById('search-suggestions');
-    if (el) el.classList.add('hidden');
-  }
-  if (!e.target.closest('.fac-wrap') && !e.target.closest('.sec-wrap')) {
-    document.querySelectorAll('.mini-suggest').forEach(b => {
-      b.classList.add('hidden');
-      b.classList.remove('active');
-    });
-  }
-});
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.course-input-container')) {
+      searchSuggestions.classList.add('hidden');
+    }
+  });
 
   minDaysRange.addEventListener('input', () => {
     if (Number(minDaysRange.value) > Number(maxDaysRange.value)) {
@@ -847,6 +909,12 @@ class RoutineGenerator {
       const secSet = new Set(prefs.sections);
 
       const sections = (this.allCourses[code] || []).filter(section => {
+        // Ignore faculty filter (global preference)
+        const ignoreFacs = this.preferences.ignoreFaculties || new Set();
+        if (ignoreFacs.size > 0) {
+          const facs = section.faculty && section.faculty.length ? section.faculty : ['TBA'];
+          if (facs.some(f => ignoreFacs.has(String(f)))) return false;
+        }
         let facOk = true;
         if (facSet.size > 0) {
           const facs = section.faculty && section.faculty.length ? section.faculty : ['TBA'];
