@@ -15,7 +15,7 @@
         <h1 class="titlehead">Routine Genius</h1>
         <h3>Powered by AI</h3>
         <h5>Intelligently build your class schedule with ease</h5>
-        <h6>Made by Rafin<3</h6>
+        <h6>Made by Rafin</h6>
       </div>
       <button id="theme-toggle" title="Toggle theme">🌙</button>
     </div>
@@ -59,6 +59,15 @@
               <span><input type="checkbox" id="slot-17:00-18:20" value="17:00-18:20"><label for="slot-17:00-18:20">5:00–6:20</label></span>
             </div>
           </div>
+          <div class="preference">
+            <label>Ignore Faculty(s)</label>
+            <div class="inline-add" style="position:relative;" id="ignore-faculty-wrap">
+              <input type="text" id="ignore-faculty-input" placeholder="Type faculty name..." autocomplete="off" style="flex:1;min-width:0;" />
+              <button id="ignore-faculty-add-btn">Add</button>
+              <div class="mini-suggest hidden" id="ignore-faculty-suggest"></div>
+            </div>
+            <div class="token-list" id="ignore-faculty-tokens" style="margin-top:.45rem;"></div>
+          </div>
         </div>
         <div class="control-group" id="constraints-group">
           <h3>3.Adjust Your Routine</h3>
@@ -92,7 +101,7 @@
       </div>
 
       <div id="output-container">
-        <div id="loading" class="hidden">Generating...</div>
+        <div id="loading" class="hidden">Loading course data…</div>
         <div id="combination-count" class="hidden combo-count"></div>
 
         <div id="suggestions-container"></div>
