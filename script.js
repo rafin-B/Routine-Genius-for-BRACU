@@ -245,20 +245,22 @@ function renderCoursePrefs() {
       <h4>${code}</h4>
 
       <div class="option-note">Faculty (optional): add preferred teacher(s). Leave empty to allow any.</div>
+      <div class="token-list" id="tokens-fac-${code}"></div>
       <div class="inline-add fac-wrap" style="position:relative;">
         <input id="inp-fac-${code}" placeholder="Type or pick a faculty" autocomplete="off">
         <button id="btn-add-fac-${code}">Add Faculty</button>
+        <button id="btn-done-fac-${code}" class="done-btn" title="Done picking faculty">&#10003; Done</button>
         <div class="mini-suggest hidden" id="sg-fac-${code}"></div>
       </div>
-      <div class="token-list" id="tokens-fac-${code}"></div>
 
       <div class="option-note" style="margin-top:.75rem;">Section (optional): add preferred section(s). Leave empty to allow any.</div>
+      <div class="token-list" id="tokens-sec-${code}"></div>
       <div class="inline-add sec-wrap" style="position:relative;">
         <input id="inp-sec-${code}" placeholder="Type or pick a section" autocomplete="off">
         <button id="btn-add-sec-${code}">Add Section</button>
+        <button id="btn-done-sec-${code}" class="done-btn" title="Done picking sections">&#10003; Done</button>
         <div class="mini-suggest hidden" id="sg-sec-${code}"></div>
       </div>
-      <div class="token-list" id="tokens-sec-${code}"></div>
     `;
 
     coursePrefsContainer.appendChild(card);
@@ -278,6 +280,14 @@ function renderCoursePrefs() {
   el.value = '';
   hideBothMiniSuggests(code);  
 };
+    document.getElementById(`btn-done-fac-${code}`).onclick = () => {
+      hideBothMiniSuggests(code);
+      document.getElementById(`inp-fac-${code}`).blur();
+    };
+    document.getElementById(`btn-done-sec-${code}`).onclick = () => {
+      hideBothMiniSuggests(code);
+      document.getElementById(`inp-sec-${code}`).blur();
+    };
     const facInp = document.getElementById(`inp-fac-${code}`);
     const secInp = document.getElementById(`inp-sec-${code}`);
     facInp.addEventListener('input', () => { 
@@ -437,7 +447,11 @@ function renderMiniSuggestions(kind, code, items) {
       if (kind === 'fac') addFacultyPref(code, val, { cascade: true });
       else addSectionPref(code, val, { cascade: true });
       input.value = '';
-      hideBothMiniSuggests(code);
+      // Keep the dropdown open so multiple picks can be made in a row.
+      // paintListsOnly (called inside addFacultyPref/addSectionPref via
+      // paintTokensAndLists) already re-renders the remaining options.
+      showMiniSuggest(kind, code);
+      input.focus();
     });
   });
   // Visibility is controlled by focus/blur — don't touch hidden class here
