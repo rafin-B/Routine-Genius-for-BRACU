@@ -383,6 +383,8 @@ body.light-mode .selected-course-item {
   transition: background var(--transition);
 }
 .inline-add button:hover { background: var(--accent-hover); }
+.inline-add button.done-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); }
+.inline-add button.done-btn:hover { background: var(--border-color); }
 
 /* ─── PREFERENCES ────────────────────────────────────── */
 .preference { margin-bottom: 1rem; }
